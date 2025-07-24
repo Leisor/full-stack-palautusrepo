@@ -9,6 +9,10 @@ const App = () => {
   ])
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
+  const [filter, setFilter] = useState('')
+  const filteredPersons = persons.filter(person =>
+    person.name.toLowerCase().includes(filter.toLowerCase())
+  )
 
   const addPerson = (event) => {
     event.preventDefault()
@@ -38,38 +42,76 @@ const App = () => {
    setNewNumber(event.target.value)
   }
 
+  const handleFilter = (event) => {
+    console.log(event.target.value)
+    setFilter(event.target.value)
+    
+  }
+
   return (
     
     <div>
       {/* <div>debug: {newName}</div> */}
       <h2>Phonebook</h2>
-      <input 
-        value={filter}
-        onChange={handleFilter}/>
+
+      <Filter filter={filter} handleFilter={handleFilter} />
 
       <h2>add a new</h2>
-      <form onSubmit={addPerson}>
+
+      <PersonForm 
+        addPerson={addPerson} 
+        handlePersonChange={handlePersonChange}
+        handleNameChange = {handleNameChange}
+        newName={newName}
+        newNumber={newNumber}
+        />
+
+      <h2>Numbers</h2>
+
+      <Persons filteredPersons={filteredPersons}/>
+    </div>
+  )
+
+}
+
+const Filter = ({ filter, handleFilter}) => {
+  return (
+    <div>
+        filter shown with
+      <input 
+        value={filter}
+        onChange={handleFilter}
+      />
+      </div>
+  )
+
+}
+
+const PersonForm = ({ addPerson, handlePersonChange, handleNameChange, newName, newNumber}) => {
+  return (
+    <form onSubmit={addPerson}>
         <div>
           name: <input
                   value={newName}
                   onChange={handlePersonChange} 
-                  /><br />
+                /><br />
           number: <input
                     value = {newNumber}
                     onChange = {handleNameChange}
-                    />
+                  />
         </div>
         <div>
           <button type="submit">add</button>
         </div>
       </form>
-      <h2>Numbers</h2>
-        {persons.map(person =>
-         <p key={person.name}>{person.name} {person.number}</p>
-        )}
-    </div>
   )
-
 }
+
+const Persons = ({ filteredPersons }) => (
+  filteredPersons.map(person =>
+         <p key={person.name}>{person.name} {person.number}</p>
+        )
+)
+
 
 export default App
