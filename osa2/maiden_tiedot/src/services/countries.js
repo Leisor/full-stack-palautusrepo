@@ -11,19 +11,10 @@ const getCountryBasicData = (countryName) => {
   return request.then(response => response.data)
 }
 
-const create = newObject => {
-  const request = axios.post(baseUrl, newObject)
-  return request.then(response => response.data)
+const getWeatherData = (countryCapital) => {
+  const apiKey = import.meta.env.VITE_SOME_KEY
+  const request = axios.get(`https://api.openweathermap.org/data/2.5/weather?q=${countryCapital}&units=metric&appid=${apiKey}`)
+  return request.then(response => response.data)         
 }
 
-const update = (id, newObject) => {
-  const request = axios.put(`${baseUrl}/${id}`, newObject)
-  return request.then(response => response.data)
-}
-
-const remove = (id) => {
-  const request = axios.delete(`${baseUrl}/${id}`)
-  return request.then(response => response.data)
-}
-
-export default { getAllCountryNames, getCountryBasicData, create, update, remove }
+export default { getAllCountryNames, getCountryBasicData, getWeatherData}

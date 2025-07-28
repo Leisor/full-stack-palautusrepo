@@ -71,6 +71,10 @@ const FilteredCountryList = ( {filteredCountryNames, showCountry, setShowCountry
 const CountryBasicData = ({ countryName }) => {
   const [country, setCountry] = useState(null)
 
+  if (!countryName) {
+    return null
+  }
+
   useEffect(() => {
     countryService
       .getCountryBasicData(countryName)
@@ -94,9 +98,37 @@ const CountryBasicData = ({ countryName }) => {
       </ul>
       <img src={country.flags.png}></img>
       <h2>Weather in {country.capital}</h2>
+      <CapitalWeather capital={country.capital} />
     </div>
   )
-
 }
+
+const CapitalWeather = ({ capital }) => {
+  const [weather, setWeather] = useState(null)
+
+  useEffect(() => {
+    countryService
+      .getWeatherData(capital)
+      .then(data => {
+        setWeather(data)
+      })
+  }, [capital])
+
+  if (!weather) {
+    return null
+  }
+
+  return (
+    <div>
+      <p>Temperature {weather.main.temp} Celsius</p>
+      <img src={`https://openweathermap.org/img/wn/${weather.weather[0].icon}@2x.png`} alt={weather.weather[0].description} />
+      <p>Wind {weather.wind.speed} m/s</p>
+     </div>
+  )
+}
+
+
+
+
 
 export default App
