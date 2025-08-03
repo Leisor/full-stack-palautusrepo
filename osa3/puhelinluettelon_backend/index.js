@@ -35,26 +35,35 @@ app.use(express.static('dist'))
 //     }
 //   ]
 
-app.get('/info', (request, response) => {
-    const personCount = persons.length
-    const requestTimestamp = new Date()
-    response.send(
-        `<p>Phonebook has info for ${personCount} people<p>
-        <p>${requestTimestamp}</p>
-        `
-    )
-})  
+app.get('/info', (request, response, next) => {
+    Person.countDocuments({}).then(count => {
+        const requestTimestamp = new Date()
+        response.send(
+            `<p>Phonebook has info for ${count} people<p>
+            <p>${requestTimestamp}</p>
+            `
+        )
+    })
+    .catch(error => next(error))
+})
 
-app.get('/api/persons', (request, response) => {
+app.get('/api/persons', (request, response, next) => {
   Person.find({}).then(persons => {
     response.json(persons)
   })
+  .catch(error => next(error))
 })
 
-app.get('/api/persons/:id', (request, response) => {
-  Person.findById(request.params.id).then(person => {
-    response.json(person)
+app.get('/api/persons/:id', (request, response, next) => {
+  Person.findById(request.params.id)
+    .then(person => {
+      if (person) {
+        response.json(person)
+      } else {
+        response.status(404).end()
+      }
   })
+  .catch(error => next(error))
 })
 
 // app.delete('/api/persons/:id', (request, response) => {
@@ -72,34 +81,59 @@ app.delete('/api/persons/:id', (request, response, next) => {
     .catch(error => next(error))
 })
 
-const generateId = () => {
-    return String(1 + Math.floor(Math.random()*100000))
-}
+// const generateId = () => {
+//     return String(1 + Math.floor(Math.random()*100000))
+// }
 
-app.post('/api/persons', (request, response) => {
+app.post('/api/persons', (request, response, next) => {
   const body = request.body
 
-  // if (!body.name || !body.number) {
-  //   return response.status(400).json({ 
-  //     error: 'name or number missing!' 
-  //   })
-  // }
+  if (!body.name || !body.number) {
+    const error = new Error()
+    error.name = 'ValidationError'
+    return next(error)
+  }
 
-  // if (persons.some(person => person.name === body.name)) {
-  //   return response.status(400).json({ 
-  //     error: 'name already exists!' 
-  //   }) 
-  // }
+  Person.find({ name: body.name })
+  .then(existingPerson => {
+    if (existingPerson.length > 0) {
+      const error = new Error()
+      error.name = 'DuplicateError'
+      return next(error)
+    }
 
   const person = new Person({
     name: body.name,
     number: body.number,
-    id: generateId(),
   })
 
-  person.save().then(savedPerson => {
+  return person.save()
+})
+.then(savedPerson => {
     response.json(savedPerson)
   })
+  .catch(error => next(error))
+})
+
+app.put('/api/persons/:id', (request, response, next) => {
+  const body = request.body
+
+  if (!body.name || !body.number) {
+    const error = new Error()
+    error.name = 'ValidationError'
+    return next(error)
+  }
+
+  const person = {
+    name: body.name,
+    number: body.number,
+  }
+
+  Person.findByIdAndUpdate(request.params.id, person, { new: true })
+    .then(updatedPerson => {
+      response.json(updatedPerson)
+    })
+    .catch(error => next(error))
 })
 
 const errorHandler = (error, request, response, next) => {
@@ -107,6 +141,10 @@ const errorHandler = (error, request, response, next) => {
 
   if (error.name === 'CastError') {
     return response.status(400).send({ error: 'malformatted id' })
+  } else if (error.name === 'ValidationError') {
+    return response.status(400).send({ error: 'name or number missing!' })
+  } else if (error.name === 'DuplicateError') {
+    return response.status(400).send({ error: 'name already exists!' })
   }
 
   next(error)
