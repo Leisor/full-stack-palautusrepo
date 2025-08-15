@@ -71,9 +71,8 @@ const App = () => {
           }, 5000)
       })
       .catch(error => {
-        setErrorMessage(
-          `name or number missing!`
-        )
+        //console.log(error.response.data)
+        setErrorMessage(error.response.data.error)
         setNewName('')
         setNewNumber('')
         setTimeout(() => {

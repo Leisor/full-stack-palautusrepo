@@ -90,7 +90,7 @@ app.post('/api/persons', (request, response, next) => {
 
   if (!body.name || !body.number) {
     const error = new Error()
-    error.name = 'ValidationError'
+    error.name = 'FieldMissingError'
     return next(error)
   }
 
@@ -113,6 +113,7 @@ app.post('/api/persons', (request, response, next) => {
     response.json(savedPerson)
   })
   .catch(error => next(error))
+  //console.log(error.response.data)
 })
 
 app.put('/api/persons/:id', (request, response, next) => {
@@ -120,7 +121,7 @@ app.put('/api/persons/:id', (request, response, next) => {
 
   if (!body.name || !body.number) {
     const error = new Error()
-    error.name = 'ValidationError'
+    error.name = 'FieldMissingError'
     return next(error)
   }
 
@@ -141,12 +142,13 @@ const errorHandler = (error, request, response, next) => {
 
   if (error.name === 'CastError') {
     return response.status(400).send({ error: 'malformatted id' })
-  } else if (error.name === 'ValidationError') {
+  } else if (error.name === 'FieldMissingError') {
     return response.status(400).send({ error: 'name or number missing!' })
   } else if (error.name === 'DuplicateError') {
     return response.status(400).send({ error: 'name already exists!' })
+  } else if (error.name === 'ValidationError') {
+    return response.status(400).send({ error: error.message })
   }
-
   next(error)
 }
 
