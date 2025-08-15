@@ -34,9 +34,9 @@ const App = () => {
       const existingPerson = persons.find(person => person.name === newName)
       if (confirm(`${newName} is already added to phonebook, replace the old number with a new one?`)) {
         personService
-          .update(existingPerson.id, personObject)
+          .update(existingPerson._id, personObject)
           .then(returnedPerson => {
-            setPersons(persons.map(person => person.id !== existingPerson.id ? person : returnedPerson))
+            setPersons(persons.map(person => person._id !== existingPerson._id ? person : returnedPerson))
             setNotificationMessage(`Updated number of ${newName}`)
             setTimeout(() => {
             setNotificationMessage(null)
@@ -46,7 +46,7 @@ const App = () => {
             setErrorMessage(
               `Information of ${newName} has already been removed from server`
             )
-            setPersons(persons.filter(p => p.id !== existingPerson.id))
+            setPersons(persons.filter(p => p._id !== existingPerson._id))
             setTimeout(() => {
               setErrorMessage(null)
             }, 5000)
@@ -60,16 +60,26 @@ const App = () => {
     personService
       .create(personObject)
         .then(returnedPerson => {
-        setPersons(persons.concat(returnedPerson))
+          setPersons(persons.concat(returnedPerson))
+          setNewName('')
+          setNewNumber('')
+          setNotificationMessage(
+            `Added ${newName}`
+          )
+          setTimeout(() => {
+            setNotificationMessage(null)
+          }, 5000)
+      })
+      .catch(error => {
+        setErrorMessage(
+          `name or number missing!`
+        )
         setNewName('')
         setNewNumber('')
-      })
-    setNotificationMessage(
-          `Added ${newName}`
-        )
         setTimeout(() => {
-          setNotificationMessage(null)
+          setErrorMessage(null)
         }, 5000)
+      })
   }
 
   const handlePersonChange = (event) => {
@@ -92,7 +102,7 @@ const App = () => {
       personService
         .remove(id)
         .then(() => {
-          setPersons(persons.filter(person => person.id !== id))
+          setPersons(persons.filter(person => person._id !== id))
         })
       setNotificationMessage(
           `Deleted ${name}`
@@ -171,9 +181,9 @@ const PersonForm = ({ addPerson, handlePersonChange, handleNameChange, newName, 
 
 const Persons = ({ filteredPersons, handleDelete }) => (
   filteredPersons.map(person =>
-         <p key={person.id}>
+         <p key={person._id}>
           {person.name} {person.number} 
-          <button onClick={() => handleDelete(person.id, person.name)}>
+          <button onClick={() => handleDelete(person._id, person.name)}>
             delete
           </button></p>
         )
