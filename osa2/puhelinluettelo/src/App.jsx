@@ -34,9 +34,9 @@ const App = () => {
       const existingPerson = persons.find(person => person.name === newName)
       if (confirm(`${newName} is already added to phonebook, replace the old number with a new one?`)) {
         personService
-          .update(existingPerson._id, personObject)
+          .update(existingPerson.id, personObject)
           .then(returnedPerson => {
-            setPersons(persons.map(person => person._id !== existingPerson._id ? person : returnedPerson))
+            setPersons(persons.map(person => person.id !== existingPerson.id ? person : returnedPerson))
             setNotificationMessage(`Updated number of ${newName}`)
             setTimeout(() => {
             setNotificationMessage(null)
@@ -46,7 +46,7 @@ const App = () => {
             setErrorMessage(
               `Information of ${newName} has already been removed from server`
             )
-            setPersons(persons.filter(p => p._id !== existingPerson._id))
+            setPersons(persons.filter(p => p.id !== existingPerson.id))
             setTimeout(() => {
               setErrorMessage(null)
             }, 5000)
@@ -102,7 +102,7 @@ const App = () => {
       personService
         .remove(id)
         .then(() => {
-          setPersons(persons.filter(person => person._id !== id))
+          setPersons(persons.filter(person => person.id !== id))
         })
       setNotificationMessage(
           `Deleted ${name}`
@@ -181,9 +181,9 @@ const PersonForm = ({ addPerson, handlePersonChange, handleNameChange, newName, 
 
 const Persons = ({ filteredPersons, handleDelete }) => (
   filteredPersons.map(person =>
-         <p key={person._id}>
+         <p key={person.id}>
           {person.name} {person.number} 
-          <button onClick={() => handleDelete(person._id, person.name)}>
+          <button onClick={() => handleDelete(person.id, person.name)}>
             delete
           </button></p>
         )
