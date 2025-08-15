@@ -13,45 +13,46 @@ app.use(morgan(':method :url :status :res[content-length] - :response-time ms :b
 app.use(express.static('dist'))
 
 // let persons = [
-//     {
-//       "name": "Arto Hellas",
-//       "number": "040-123456",
-//       "id": "1"
-//     },
-//     {
-//       "name": "Ada Lovelace",
-//       "number": "39-44-5323523",
-//       "id": "2"
-//     },
-//     {
-//       "name": "Dan Abramov",
-//       "number": "12-43-234345",
-//       "id": "3"
-//     },
-//     {
-//       "name": "Mary Poppendieck",
-//       "number": "39-23-6423122",
-//       "id": "4"
-//     }
-//   ]
+//   {
+//     "name": "Arto Hellas",
+//     "number": "040-123456",
+//     "id": "1"
+//   },
+//   {
+//     "name": "Ada Lovelace",
+//     "number": "39-44-5323523",
+//     "id": "2"
+//   },
+//   {
+//     "name": "Dan Abramov",
+//     "number": "12-43-234345",
+//     "id": "3"
+//   },
+//   {
+//     "name": "Mary Poppendieck",
+//     "number": "39-23-6423122",
+//     "id": "4"
+//   }
+// ]
 
 app.get('/info', (request, response, next) => {
-    Person.countDocuments({}).then(count => {
-        const requestTimestamp = new Date()
-        response.send(
-            `<p>Phonebook has info for ${count} people<p>
-            <p>${requestTimestamp}</p>
-            `
-        )
+  Person.countDocuments({})
+    .then(count => {
+      const requestTimestamp = new Date()
+      response.send(
+        `<p>Phonebook has info for ${count} people</p>
+         <p>${requestTimestamp}</p>`
+      )
     })
     .catch(error => next(error))
 })
 
 app.get('/api/persons', (request, response, next) => {
-  Person.find({}).then(persons => {
-    response.json(persons)
-  })
-  .catch(error => next(error))
+  Person.find({})
+    .then(persons => {
+      response.json(persons)
+    })
+    .catch(error => next(error))
 })
 
 app.get('/api/persons/:id', (request, response, next) => {
@@ -62,27 +63,26 @@ app.get('/api/persons/:id', (request, response, next) => {
       } else {
         response.status(404).end()
       }
-  })
-  .catch(error => next(error))
+    })
+    .catch(error => next(error))
 })
 
 // app.delete('/api/persons/:id', (request, response) => {
 //   const id = request.params.id
 //   persons = persons.filter(person => person.id !== id)
-
 //   response.status(204).end()
 // })
 
 app.delete('/api/persons/:id', (request, response, next) => {
   Person.findByIdAndDelete(request.params.id)
-    .then(result => {
+    .then(() => {
       response.status(204).end()
     })
     .catch(error => next(error))
 })
 
 // const generateId = () => {
-//     return String(1 + Math.floor(Math.random()*100000))
+//   return String(1 + Math.floor(Math.random()*100000))
 // }
 
 app.post('/api/persons', (request, response, next) => {
@@ -95,24 +95,24 @@ app.post('/api/persons', (request, response, next) => {
   }
 
   Person.find({ name: body.name })
-  .then(existingPerson => {
-    if (existingPerson.length > 0) {
-      const error = new Error()
-      error.name = 'DuplicateError'
-      return next(error)
-    }
+    .then(existingPerson => {
+      if (existingPerson.length > 0) {
+        const error = new Error()
+        error.name = 'DuplicateError'
+        return next(error)
+      }
 
-  const person = new Person({
-    name: body.name,
-    number: body.number,
-  })
+      const person = new Person({
+        name: body.name,
+        number: body.number,
+      })
 
-  return person.save()
-})
-.then(savedPerson => {
-    response.json(savedPerson)
-  })
-  .catch(error => next(error))
+      return person.save()
+    })
+    .then(savedPerson => {
+      response.json(savedPerson)
+    })
+    .catch(error => next(error))
   //console.log(error.response.data)
 })
 

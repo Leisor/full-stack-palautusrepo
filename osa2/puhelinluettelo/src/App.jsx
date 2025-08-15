@@ -42,7 +42,7 @@ const App = () => {
             setNotificationMessage(null)
             }, 5000)
           })
-          .catch(error => {
+          .catch(() => {
             setErrorMessage(
               `Information of ${newName} has already been removed from server`
             )
