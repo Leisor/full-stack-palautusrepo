@@ -1,14 +1,6 @@
 const blogsRouter = require('express').Router()
-const mongoose = require('mongoose') //temp
+const Blog = require('../models/blog')
 
-const blogSchema = mongoose.Schema({ // temp
-  title: String,
-  author: String,
-  url: String,
-  likes: Number,
-})
-
-const Blog = mongoose.model('Blog', blogSchema) // temp
 
 blogsRouter.get('/', (request, response) => {
   Blog.find({}).then((blogs) => {
@@ -24,4 +16,4 @@ blogsRouter.post('/', (request, response) => {
   })
 })
 
-module.exports = blogsRouter, Blog // Blog is temp
+module.exports = blogsRouter
