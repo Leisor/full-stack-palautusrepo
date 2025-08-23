@@ -62,6 +62,27 @@ test('blog identifier must be id, not _id', async () => {
         
 })
 
+test.only('any blog can be added', async () => {
+  const newEntry = {
+    title: 'Testing blog entries ',
+    author: 'Mr. Tester',
+    url: 'https://mrtestertesting.test',
+    likes: 60
+  }
+
+  const initialBlogs = await Blog.find({})
+  const initialCount = initialBlogs.length
+
+  await api
+    .post('/api/blogs')
+    .send(newEntry)
+    .expect(201)
+    .expect('Content-Type', /application\/json/)
+
+  const finalBlogs = await Blog.find({})
+  assert.strictEqual(finalBlogs.length, initialCount + 1)
+})
+
 after(async () => {
   await mongoose.connection.close()
 })
