@@ -62,7 +62,7 @@ test('blog identifier must be id, not _id', async () => {
         
 })
 
-test.only('any blog can be added', async () => {
+test('any blog can be added', async () => {
   const newEntry = {
     title: 'Testing blog entries ',
     author: 'Mr. Tester',
@@ -81,6 +81,82 @@ test.only('any blog can be added', async () => {
 
   const finalBlogs = await Blog.find({})
   assert.strictEqual(finalBlogs.length, initialCount + 1)
+})
+
+test('no likes added defaults to 0 likes', async () => {
+  const newEntry = {
+    title: 'Testing blog entries ',
+    author: 'Mr. Tester',
+    url: 'https://mrtestertesting.test',
+    //likes: 60
+  }
+
+  const response = await api
+    .post('/api/blogs')
+    .send(newEntry)
+    .expect(201)
+    .expect('Content-Type', /application\/json/)
+
+  assert.strictEqual(response.body.likes, 0)
+})
+
+test('entries with missing title or url are answered with 400', async () => {
+  const newEntryNoTitle = {
+    //title: 'Testing blog entries ',
+    author: 'Mr. Tester',
+    url: 'https://mrtestertesting.test',
+    likes: 60
+  }
+
+  const newEntryNoUrl = {
+    title: 'Testing blog entries ',
+    author: 'Mr. Tester',
+    //url: 'https://mrtestertesting.test',
+    likes: 60
+  }
+
+  await api
+    .post('/api/blogs')
+    .send(newEntryNoTitle)
+    .expect(400)
+
+  await api
+    .post('/api/blogs')
+    .send(newEntryNoUrl)
+    .expect(400)
+})
+
+test('it is possible to delete a blog', async () => {
+  const initialBlogs = await Blog.find({})
+  const firstBlog = initialBlogs[0]
+
+  await api
+    .delete(`/api/blogs/${firstBlog.id}`)
+    .expect(204)
+
+  const finalBlogs = await Blog.find({})
+  assert.strictEqual(finalBlogs.length, initialBlogs.length - 1)
+})
+
+test('a blog was successfully updated', async () => {
+  const initialBlogs = await Blog.find({})
+  const firstBlog = initialBlogs[0]
+  
+  const updatedBlogData = {
+    title: firstBlog.title,
+    author: firstBlog.author,
+    url: firstBlog.url,
+    likes: firstBlog.likes + 1
+  }
+
+  const response = await api
+    .put(`/api/blogs/${firstBlog.id}`)
+    .send(updatedBlogData)
+    .expect(200)
+    .expect('Content-Type', /application\/json/)
+
+  assert.strictEqual(response.body.likes, firstBlog.likes + 1)
+  assert.strictEqual(response.body.id, firstBlog.id)
 })
 
 after(async () => {
