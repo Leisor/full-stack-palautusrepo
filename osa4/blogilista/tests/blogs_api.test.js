@@ -1,4 +1,4 @@
-const { test, after } = require('node:test')
+const { test, before, after } = require('node:test')
 const assert = require('node:assert')
 const mongoose = require('mongoose')
 const supertest = require('supertest')
@@ -8,7 +8,7 @@ const api = supertest(app)
 
 const listWithThreeBlogs = [
         {
-            _id: '5a422a851b54a676234d17f7',
+           // _id: '5a422a851b54a676234d17f7',
             title: 'React patterns',
             author: 'Michael Chan',
             url: 'https://reactpatterns.com/',
@@ -16,7 +16,7 @@ const listWithThreeBlogs = [
             __v: 0
         },
         {
-            _id: '5a422aa71b54a676234d17f8',
+    //        _id: '5a422aa71b54a676234d17f8',
             title: 'Go To Statement Considered Harmful',
             author: 'Edsger W. Dijkstra',
             url: 'http://www.u.arizona.edu/~rubinson/copyright_violations/Go_To_Considered_Harmful.html',
@@ -24,7 +24,7 @@ const listWithThreeBlogs = [
             __v: 0
         },
         {
-            _id: '5a422b3a1b54a676234d17f9',
+       //     _id: '5a422b3a1b54a676234d17f9',
             title: 'Canonical string reduction',
             author: 'Edsger W. Dijkstra',
             url: 'http://www.cs.utexas.edu/~EWD/transcriptions/EWD08xx/EWD808.html',
@@ -32,6 +32,12 @@ const listWithThreeBlogs = [
             __v: 0
         }
     ]
+
+const Blog = require('../models/blog')
+before(async () => {
+  await Blog.deleteMany({})
+  await Blog.insertMany(listWithThreeBlogs)
+})
 
 test('blogs are returned as json', async () => {
   await api
@@ -41,8 +47,11 @@ test('blogs are returned as json', async () => {
 })
 
 test('blog identifier must be id, not _id', async () => {
+    const blogsInDatabase = await Blog.find({})
+    const id = blogsInDatabase[0].id
+
     const response = await api
-      .get('api/blogs/a422b3a1b54a676234d17f9')
+      .get(`/api/blogs/${id}`)
       .expect(200)
       .expect('Content-Type', /application\/json/)
 
