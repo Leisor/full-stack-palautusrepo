@@ -1,8 +1,11 @@
-const { test, before, after } = require('node:test')
+//const ROOT_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InJvb3QiLCJpZCI6IjY4YWQ2Y2YyNGM3MzQ0OGZmMzNiY2U5ZCIsImlhdCI6MTc1NjIwMDk4NH0.akvVsnTKLbARQ0iQO_bnUmUxUMT9-AqX6s2IbsQMJl8'
+const { test, before, after, describe } = require('node:test')
 const assert = require('node:assert')
 const mongoose = require('mongoose')
 const supertest = require('supertest')
 const app = require('../app')
+const User = require('../models/user')
+const bcrypt = require('bcrypt')
 
 const api = supertest(app)
 
@@ -33,11 +36,33 @@ const listWithThreeBlogs = [
         }
     ]
 
-const Blog = require('../models/blog')
+let rootToken
+
 before(async () => {
+  await User.deleteMany({})
   await Blog.deleteMany({})
-  await Blog.insertMany(listWithThreeBlogs)
+
+  const passwordHash = await bcrypt.hash('salasana', 10)
+  const user = new User({ username: 'root', name: 'Pääkäyttäjä', passwordHash })
+  const savedUser = await user.save()
+
+  const response = await api
+    .post('/api/login')
+    .send({ username: 'root', password: 'salasana' })
+  rootToken = response.body.token
+
+  const blogsWithUsers = listWithThreeBlogs.map(blog => ({
+    ...blog,
+    user: savedUser._id
+  }))
+
+  const insertedBlogs = await Blog.insertMany(blogsWithUsers)
+
+  savedUser.blogs = insertedBlogs.map(b => b._id)
+  await savedUser.save()
 })
+
+const Blog = require('../models/blog')
 
 test('blogs are returned as json', async () => {
   await api
@@ -75,6 +100,7 @@ test('any blog can be added', async () => {
 
   await api
     .post('/api/blogs')
+    .set('Authorization', `Bearer ${rootToken}`)
     .send(newEntry)
     .expect(201)
     .expect('Content-Type', /application\/json/)
@@ -93,6 +119,7 @@ test('no likes added defaults to 0 likes', async () => {
 
   const response = await api
     .post('/api/blogs')
+    .set('Authorization', `Bearer ${rootToken}`)
     .send(newEntry)
     .expect(201)
     .expect('Content-Type', /application\/json/)
@@ -117,11 +144,13 @@ test('entries with missing title or url are answered with 400', async () => {
 
   await api
     .post('/api/blogs')
+    .set('Authorization', `Bearer ${rootToken}`)
     .send(newEntryNoTitle)
     .expect(400)
 
   await api
     .post('/api/blogs')
+    .set('Authorization', `Bearer ${rootToken}`)
     .send(newEntryNoUrl)
     .expect(400)
 })
@@ -132,6 +161,7 @@ test('it is possible to delete a blog', async () => {
 
   await api
     .delete(`/api/blogs/${firstBlog.id}`)
+    .set('Authorization', `Bearer ${rootToken}`)
     .expect(204)
 
   const finalBlogs = await Blog.find({})
@@ -151,12 +181,47 @@ test('a blog was successfully updated', async () => {
 
   const response = await api
     .put(`/api/blogs/${firstBlog.id}`)
+    .set('Authorization', `Bearer ${rootToken}`)
     .send(updatedBlogData)
     .expect(200)
     .expect('Content-Type', /application\/json/)
 
   assert.strictEqual(response.body.likes, firstBlog.likes + 1)
   assert.strictEqual(response.body.id, firstBlog.id)
+})
+
+test('adding a blog fails with 401 if token is missing', async () => {
+  const newEntry = {
+    title: 'A blog for no tokens',
+    author: 'Some Pirate',
+    url: 'https://notoken.test',
+    likes: 0
+  }
+
+  await api
+    .post('/api/blogs')
+    .send(newEntry)
+    .expect(401)
+})
+
+describe('no invalid users or passwords created', () => {
+  test('user creation fails with too short password', async () => {
+    const newUser = { username: 'newUser', name: 'Jorma', password: 'pw' }
+    const res = await api.post('/api/users').send(newUser).expect(400)
+    assert.match(res.body.error, /password/i)
+  })
+
+  test('user creation fails with missing username', async () => {
+    const newUser = { name: 'Jorma', password: 'salasana' }
+    const res = await api.post('/api/users').send(newUser).expect(400)
+    assert.match(res.body.error, /username/i)
+  })
+
+  test('user creation fails with duplicate username', async () => {
+    const newUser = { username: 'root', name: 'Daniel Duplikaatti', password: 'salasana' }
+    const res = await api.post('/api/users').send(newUser).expect(409)
+    assert.match(res.body.error, /unique|exists/i)
+  })
 })
 
 after(async () => {
