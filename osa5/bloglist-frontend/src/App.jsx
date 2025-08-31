@@ -27,7 +27,6 @@ const App = () => {
   const [user, setUser] = useState(null)
   const [errorMessage, setErrorMessage] = useState(null)
   const [messageType, setMessageType] = useState('error')
-  const [newBlog, setNewBlog] = useState({ title: '', author: '', url: '' })
   const blogFormRef = useRef()
 
   useEffect(() => {
@@ -105,22 +104,19 @@ const App = () => {
     )
   }
 
-  const handleNewBlog = async (event) => {
-    event.preventDefault()
-    
+  const handleNewBlog = async (blogObject) => {
     try {
-      console.log('Attempting to create blog:', newBlog)
-      const createdBlog = await blogService.create(newBlog)
+      //console.log('Attempting to create blog:', blogObject)
+      const createdBlog = await blogService.create(blogObject)
       blogFormRef.current.toggleVisibility()
       setBlogs(blogs.concat(createdBlog))
-      setErrorMessage(`a new blog ${newBlog.title} by ${newBlog.author} added`)
+      setErrorMessage(`a new blog ${blogObject.title} by ${blogObject.author} added`)
       setMessageType('success')
-      setNewBlog({ title: '', author: '', url: '' })
       setTimeout(() => {
         setErrorMessage(null)
       }, 5000)
-    } catch (error) {
-      console.error('Blog creation failed:', error)
+    } catch {
+      //console.error('Blog creation failed:', error)
       setErrorMessage('Blog not created!')
       setMessageType('error')
       setTimeout(() => {
@@ -128,6 +124,20 @@ const App = () => {
       }, 5000)
     }
   }
+
+  const handleUpdateBlog = async (id, blogObject) => {
+  try {
+    const updatedBlog = await blogService.like(id, blogObject)
+    setBlogs(blogs.map(blog => blog.id !== id ? blog : updatedBlog))
+  } catch (error) {
+    console.error('Blog update failed:', error)
+    setErrorMessage('Failed to update blog')
+    setMessageType('error')
+    setTimeout(() => {
+      setErrorMessage(null)
+    }, 5000)
+  }
+}
 
     
 
@@ -140,18 +150,11 @@ const App = () => {
         <button onClick={handleLogout}>logout</button>
       </p>
       <Togglable buttonLabel="create new blog" ref={blogFormRef}>
-        <NewBlogForm
-          handleSubmit={handleNewBlog}
-          newBlog={newBlog}
-          setNewBlog={setNewBlog}
-        />
+        <NewBlogForm createBlog={handleNewBlog} />
       </Togglable>
       {blogs.map(blog =>
-        <Blog key={blog.id} blog={blog} />
+        <Blog key={blog.id} blog={blog} updateBlog={handleUpdateBlog} />
       )}
-
-      
-
     </div>
   )
 }
