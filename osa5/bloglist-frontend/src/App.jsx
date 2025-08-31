@@ -4,6 +4,7 @@ import Togglable from './components/Togglable'
 import NewBlogForm from './components/NewBlogForm'
 import blogService from './services/blogs'
 import loginService from './services/login'
+import PropTypes from 'prop-types'
 
 const Notification = ({ message, type }) => {
   if (message === null) {
@@ -11,10 +12,7 @@ const Notification = ({ message, type }) => {
   }
 
   return (
-    <div className={type === 'success'
-      ? 'success' 
-      : 'error'
-    }>
+    <div className={type === 'success' ? 'success' : 'error'}>
       {message}
     </div>
   )
@@ -22,8 +20,8 @@ const Notification = ({ message, type }) => {
 
 const App = () => {
   const [blogs, setBlogs] = useState([])
-  const [username, setUsername] = useState('') 
-  const [password, setPassword] = useState('') 
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
   const [user, setUser] = useState(null)
   const [errorMessage, setErrorMessage] = useState(null)
   const [messageType, setMessageType] = useState('error')
@@ -31,11 +29,11 @@ const App = () => {
 
   useEffect(() => {
     blogService.getAll().then(blogs =>
-      setBlogs( blogs )
-    )  
+      setBlogs(blogs)
+    )
   }, [])
 
-    useEffect(() => {
+  useEffect(() => {
     const loggedUserJSON = window.localStorage.getItem('loggedBloglistUser')
     if (loggedUserJSON) {
       const user = JSON.parse(loggedUserJSON)
@@ -44,15 +42,15 @@ const App = () => {
     }
   }, [])
 
-   const handleLogin = async event => {
+  const handleLogin = async event => {
     event.preventDefault()
-    
+
     try {
       const user = await loginService.login({ username, password })
-      
+
       window.localStorage.setItem(
         'loggedBloglistUser', JSON.stringify(user)
-      ) 
+      )
       blogService.setToken(user.token)
       setUser(user)
       setUsername('')
@@ -67,10 +65,10 @@ const App = () => {
   }
 
   const handleLogout = () => {
-  setUser(null)
-  window.localStorage.removeItem('loggedBloglistUser')
-  blogService.setToken(null)
-}
+    setUser(null)
+    window.localStorage.removeItem('loggedBloglistUser')
+    blogService.setToken(null)
+  }
 
   if (user === null) {
     return (
@@ -78,35 +76,34 @@ const App = () => {
         <h2>Log in to application</h2>
         <Notification message={errorMessage} type={messageType} />
         <form onSubmit={handleLogin}>
-        <div>
-          <label>
-            username
-            <input
-              type="text"
-              value={username}
-              onChange={({ target }) => setUsername(target.value)}
-            />
-          </label>
-        </div>
-        <div>
-          <label>
-            password
-            <input
-              type="password"
-              value={password}
-              onChange={({ target }) => setPassword(target.value)}
-            />
-          </label>
-        </div>
-        <button type="submit">login</button>
-      </form>
+          <div>
+            <label>
+              username
+              <input
+                type="text"
+                value={username}
+                onChange={({ target }) => setUsername(target.value)}
+              />
+            </label>
+          </div>
+          <div>
+            <label>
+              password
+              <input
+                type="password"
+                value={password}
+                onChange={({ target }) => setPassword(target.value)}
+              />
+            </label>
+          </div>
+          <button type="submit">login</button>
+        </form>
       </div>
     )
   }
 
   const handleNewBlog = async (blogObject) => {
     try {
-      //console.log('Attempting to create blog:', blogObject)
       const createdBlog = await blogService.create(blogObject)
       blogFormRef.current.toggleVisibility()
       setBlogs(blogs.concat(createdBlog))
@@ -116,7 +113,6 @@ const App = () => {
         setErrorMessage(null)
       }, 5000)
     } catch {
-      //console.error('Blog creation failed:', error)
       setErrorMessage('Blog not created!')
       setMessageType('error')
       setTimeout(() => {
@@ -126,20 +122,39 @@ const App = () => {
   }
 
   const handleUpdateBlog = async (id, blogObject) => {
-  try {
-    const updatedBlog = await blogService.like(id, blogObject)
-    setBlogs(blogs.map(blog => blog.id !== id ? blog : updatedBlog))
-  } catch (error) {
-    console.error('Blog update failed:', error)
-    setErrorMessage('Failed to update blog')
-    setMessageType('error')
-    setTimeout(() => {
-      setErrorMessage(null)
-    }, 5000)
+    try {
+      const updatedBlog = await blogService.like(id, blogObject)
+      const originalBlog = blogs.find(blog => blog.id === id)
+      updatedBlog.user = originalBlog.user
+      setBlogs(blogs.map(blog => blog.id !== id ? blog : updatedBlog))
+    } catch (error) {
+      console.error('Blog update failed:', error)
+      setErrorMessage('Failed to update blog')
+      setMessageType('error')
+      setTimeout(() => {
+        setErrorMessage(null)
+      }, 5000)
+    }
   }
-}
 
-    
+  const handleRemoveBlog = async (id) => {
+    try {
+      await blogService.remove(id)
+      setBlogs(blogs.filter(blog => blog.id !== id))
+      setErrorMessage('Blog removed')
+      setMessageType('success')
+      setTimeout(() => {
+        setErrorMessage(null)
+      }, 5000)
+    } catch (error) {
+      console.error('Blog removal failed:', error)
+      setErrorMessage('Blog removal failed')
+      setMessageType('error')
+      setTimeout(() => {
+        setErrorMessage(null)
+      }, 5000)
+    }
+  }
 
   return (
     <div>
@@ -152,12 +167,24 @@ const App = () => {
       <Togglable buttonLabel="create new blog" ref={blogFormRef}>
         <NewBlogForm createBlog={handleNewBlog} />
       </Togglable>
-      {blogs.map(blog =>
-        <Blog key={blog.id} blog={blog} updateBlog={handleUpdateBlog} />
-      )}
+      {blogs
+        .sort((a, b) => b.likes - a.likes)
+        .map(blog =>
+          <Blog
+            key={blog.id}
+            blog={blog}
+            updateBlog={handleUpdateBlog}
+            removeBlog={handleRemoveBlog}
+            user={user}
+          />
+        )}
     </div>
   )
 }
 
+Notification.propTypes = {
+  message: PropTypes.string,
+  type: PropTypes.string.isRequired,
+}
 
 export default App
